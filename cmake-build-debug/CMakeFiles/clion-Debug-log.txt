@@ -1,0 +1,4 @@
+"D:\Aplicaciones\IDE's\CLion 2024.3.5\bin\cmake\win\x64\bin\cmake.exe" -DCMAKE_BUILD_TYPE=Debug "-DCMAKE_MAKE_PROGRAM=D:/Aplicaciones/IDE's/CLion 2024.3.5/bin/ninja/win/x64/ninja.exe" -G Ninja -S C:\Users\rodri\CLionProjects\Proyecto_Practico_TLP -B C:\Users\rodri\CLionProjects\Proyecto_Practico_TLP\cmake-build-debug
+-- Configuring done (0.2s)
+-- Generating done (0.1s)
+-- Build files have been written to: C:/Users/rodri/CLionProjects/Proyecto_Practico_TLP/cmake-build-debug

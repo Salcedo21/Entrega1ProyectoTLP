@@ -1,0 +1,10 @@
+^C:\USERS\RODRI\CLIONPROJECTS\PROYECTO_PRACTICO_TLP\BUILD\CMAKEFILES\97782C0B694C9919A24F8173E2DDD75D\GENERATE.STAMP.RULE
+setlocal
+"D:\Aplicaciones\visual estudio tools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" -SC:/Users/rodri/CLionProjects/Proyecto_Practico_TLP -BC:/Users/rodri/CLionProjects/Proyecto_Practico_TLP/build --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file C:/Users/rodri/CLionProjects/Proyecto_Practico_TLP/build/Proyecto_Practico_TLP.sln
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

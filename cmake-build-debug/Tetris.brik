@@ -1,0 +1,147 @@
+Hardcore Tetris
+//====================================
+// Desarrollado por:
+// Dylan Ramirez Blanquicet, 
+// Santiago Abelardo Salcedo Rodriguez,
+// Juan Camilo Castano Chavarriaga
+//====================================
+
+
+//====================================
+// Convenciones
+//-----------------------------
+// - Eje X -> derecha, eje Y -> abajo. Origen (0,0) en esquina superior izquierda.
+// - Todo en celdas enteras. Rotaciones discretas 90/180.
+// - Denotaremos una operación (método, o función) por      nombre(entrada: tipoDeEntrada) -> tipoDeSalida
+// - Una variable sin declarar debe aclarar su tipo así     variable: tipo
+// - Las reglas se expresan como transiciones condicionales: 
+//      CUANDO condición -> ENTONCES transición
+//====================================
+
+
+//=====================
+// Tipos y registros
+//=====================
+
+type int;
+type bool;
+type real;
+type char;
+type str;
+
+record coord (x: int, y: int);
+
+ctes CELL   { Vacia, I, O, T, S, Z, J, L };
+ctes PIECE  { I, O, T, S, Z, J, L };
+ctes ROT    { R0, R90, R180, R270 };
+ctes STATE  { APPEARING, ACTIVE, LOCKED, CLEANING, ENTRY, PAUSE, WON, LOST };
+ctes KEY    { LEFT, RIGHT, DOWN, SPACE, ROTATECW, ROTATECCW, ROTATE180, HOLD, PAUSE };
+
+
+//=====================
+// Transformaciones
+//=====================
+
+rotation stdRotation {
+  cw   (position: coord) -> coord;
+  ccw  (position: coord) -> coord;
+  r180 (position: coord) -> coord;
+}
+
+
+//=====================
+// Piezas estándar
+//=====================
+
+pieces stdSet using stdRotation {
+  T { color = "magenta";
+      shape { R0 = [(0,0),(-1,0),(1,0),(0,1)] }
+    }
+    
+  J { color = "azul";
+      shape { R0 = [(0,0),(-1,0),(1,0),(-1,1)] }
+    }
+    
+  L { color = "naranja";
+      shape { R0 = [(0,0),(-1,0),(1,0),(1,1)] }
+    }
+
+  S { color = "verde";
+      shape { R0 = [(0,0),(1,0),(0,1),(-1,1)] }
+    }
+
+  Z { color = "rojo";
+      shape { R0 = [(0,0),(-1,0),(0,1),(1,1)] }
+    }
+
+  I { color = "cyan";
+      shape { R0 = [(-1,0),(0,0),(1,0),(2,0)] }
+    }
+
+  O { color = "amarillo";
+      shape { R0 = [(0,0),(1,0),(0,1),(1,1)] }
+    }
+}
+
+
+//=====================
+// Temporización
+//=====================
+
+clock stdRhythm {
+    tickMs = 16;
+    gravity(level: int) -> int;
+}
+
+
+//=====================
+// Puntuación
+//=====================
+
+scoring stdScoring {
+    line { 1 = 100; 2 = 200; 3 = 500; 4 = 800; }
+    drop { soft = 1; hard = 2; }
+    combo(n: int) -> int;
+}
+
+
+//=====================
+// Reglas del juego
+//=====================
+
+rules stdRules {
+    lineClear:
+        when lineComplete
+        -> transition { clearLines; addScore(stdScoring); increaseCombo; updateB2B }
+
+    levelUp:
+        when linesCleared >= 10*(currentLevel + 1)
+        -> transition { increaseLevel; setGravity(stdRhythm.gravity(currentLevel)); }
+
+    gameEnd:
+        when pieceAtTop -> state = STATE::LOST
+        or when score >= scoreGoal -> state = STATE::WON
+}
+
+
+//=====================
+// Definición del juego
+//=====================
+
+game Tetris {
+    board { width: int, height: int };
+
+    using rotation = Any;
+    using pieces   = Any;
+    using clock    = Any;
+    using scoring  = Any;
+
+    randomSeed: int;
+    preview: int;
+    score: int;
+    scoreGoal: int;
+    linesCleared: int;
+
+    holdEnable: bool;
+    hardDropEnable: bool;
+}

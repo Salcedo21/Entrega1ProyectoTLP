@@ -1,0 +1,8 @@
+[
+{
+  "directory": "/workspaces/Proyecto_Practico_TLP/build",
+  "command": "/usr/bin/g++   -g -std=gnu++14 -o CMakeFiles/Proyecto_Practico_TLP.dir/main.cpp.o -c /workspaces/Proyecto_Practico_TLP/main.cpp",
+  "file": "/workspaces/Proyecto_Practico_TLP/main.cpp",
+  "output": "CMakeFiles/Proyecto_Practico_TLP.dir/main.cpp.o"
+}
+]

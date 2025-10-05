@@ -1,0 +1,23 @@
+--- Analisis Sintactico (Parser) ---
+Sintaxis correcta. AST (Tabla de Simbolos) construido.
+Contenido del AST:
+  ctes_CELL: [Vacia,I,O,T,S,Z,J,L]
+  ctes_PIECE: [I,O,T,S,Z,J,L]
+  ctes_ROT: [R0,R90,R180,R270]
+  ctes_STATE: [APPEARING,ACTIVE,LOCKED,CLEANING,ENTRY,PAUSE,WON,LOST]
+  ctes_KEY: [LEFT,RIGHT,DOWN,SPACE,ROTATECW,ROTATECCW,ROTATE180,HOLD,PAUSE]
+  types: [int,bool,real,char,str]
+  record_coord: {x=int,y=int}
+  rotation_stdRotation: [cw(position: coord -> coord),ccw(position: coord -> coord),r180(position: coord -> coord)]
+  pieces_set: stdSet using=stdRotation
+    piece_T: {color=magenta,R0=[(0,0),,(-1,0),,(1,0),,(0,1)]}
+    piece_J: {color=azul,R0=[(0,0),,(-1,0),,(1,0),,(-1,1)]}
+    piece_L: {color=naranja,R0=[(0,0),,(-1,0),,(1,0),,(1,1)]}
+    piece_S: {color=verde,R0=[(0,0),,(1,0),,(0,1),,(-1,1)]}
+    piece_Z: {color=rojo,R0=[(0,0),,(-1,0),,(0,1),,(1,1)]}
+    piece_I: {color=cyan,R0=[(-1,0),,(0,0),,(1,0),,(2,0)]}
+    piece_O: {color=amarillo,R0=[(0,0),,(1,0),,(0,1),,(1,1)]}
+  clock_stdRhythm: {tickMs=16,funcs=[gravity(level: int -> int)]}
+  scoring_stdScoring: {}
+  rule_stdRules_lineClear: {conditions=[lineComplete],effects=[transition { clearLines]}
+  game_name: Tetris

@@ -1,0 +1,128 @@
+Hardcore Snake
+//====================================
+// Desarrollado por:
+// Dylan Ramirez Blanquicet, 
+// Santiago Abelardo Salcedo Rodriguez,
+// Juan Camilo Castano Chavarriaga
+//====================================
+
+
+//====================================
+// Convenciones
+//-----------------------------
+// - Eje X -> derecha, eje Y -> abajo. Origen (0,0) en esquina superior izquierda.
+// - Todo en celdas enteras.
+// - La serpiente se mueve en pasos discretos de 1 celda.
+// - Denotaremos una operación (método, o función) por      nombre(entrada: tipoDeEntrada) -> tipoDeSalida
+// - Una variable sin declarar debe aclarar su tipo así     variable: tipo
+// - Las reglas se expresan como transiciones condicionales: 
+//      CUANDO condición -> ENTONCES transición
+//====================================
+
+
+//=====================
+// Tipos y registros
+//=====================
+
+type int;
+type bool;
+type real;
+type char;
+type str;
+
+record coord (x: int, y: int);
+
+ctes CELL   { Empty, Snake, Food, Wall };
+ctes DIR    { UP, DOWN, LEFT, RIGHT };
+ctes STATE  { PLAYING, PAUSE, WON, LOST };
+ctes KEY    { UP, DOWN, LEFT, RIGHT, PAUSE };
+
+
+//=====================
+// Transformaciones
+//=====================
+
+movement stdMovement {
+  step(position: coord, dir: DIR) -> coord;
+}
+
+
+//=====================
+// Entidades del juego
+//=====================
+
+entity SnakeBody {
+    segments: coord[];
+    direction: DIR;
+}
+
+entity Food {
+    position: coord;
+}
+
+
+//=====================
+// Temporización
+//=====================
+
+clock stdRhythm {
+    tickMs = 100;                   // cada 100 ms avanza un paso
+    speed(level: int) -> int;       // la velocidad puede depender del nivel
+}
+
+
+//=====================
+// Puntuación
+//=====================
+
+scoring stdScoring {
+    food: int;                      // puntos por comer una comida
+    growth: int;                    // celdas nuevas al crecer
+    levelUp: int;                   // puntos por subir de nivel
+}
+
+
+//=====================
+// Reglas del juego
+//=====================
+
+rules stdRules {
+    eatFood:
+        when headAt(food.position)
+        -> transition { growSnake; placeNewFood; addScore(stdScoring.food) }
+
+    collideSelf:
+        when headIn(snake.segments)
+        -> transition { state = STATE::LOST }
+
+    collideWall:
+        when headOutsideBoard
+        -> transition { state = STATE::LOST }
+
+    levelUp:
+        when score >= (level * 50)
+        -> transition { increaseLevel; setSpeed(stdRhythm.speed(level)) }
+
+    gameWon:
+        when snake.segments.length >= (board.width * board.height)
+        -> transition { state = STATE::WON }
+}
+
+
+//=====================
+// Definición del juego
+//=====================
+
+game Snake {
+    board { width: int, height: int };
+
+    using movement = Any;
+    using clock    = Any;
+    using scoring  = Any;
+
+    randomSeed: int;
+    score: int;
+    level: int;
+
+    state: STATE;
+}

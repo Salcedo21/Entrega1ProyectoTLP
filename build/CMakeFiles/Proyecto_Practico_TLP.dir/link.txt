@@ -1,0 +1,1 @@
+/usr/bin/g++ -g CMakeFiles/Proyecto_Practico_TLP.dir/main.cpp.o -o Proyecto_Practico_TLP 

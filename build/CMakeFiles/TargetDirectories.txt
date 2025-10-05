@@ -1,0 +1,3 @@
+C:/Users/rodri/CLionProjects/Proyecto_Practico_TLP/build/CMakeFiles/analizador.dir
+C:/Users/rodri/CLionProjects/Proyecto_Practico_TLP/build/CMakeFiles/ALL_BUILD.dir
+C:/Users/rodri/CLionProjects/Proyecto_Practico_TLP/build/CMakeFiles/ZERO_CHECK.dir
