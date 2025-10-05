@@ -3,12 +3,12 @@
     "configurations": [
         {
             "name": "Depurar analizador.exe (C++14)",
-            "type": "cppvsdbg",                   // usa el depurador de MSVC (en Windows)
+            "type": "cppvsdbg",                   
             "request": "launch",
             "program": "${fileDirname}\\${fileBasenameNoExtension}.exe", 
-            "args": [ "Tetris.brik" ],            // puedes cambiar o dejar vacío
+            "args": [ "Tetris.brik" ],            
             "stopAtEntry": false,
-            "cwd": "${fileDirname}",              // directorio de trabajo
+            "cwd": "${fileDirname}",              
             "console": "integratedTerminal",
             "preLaunchTask": "C/C++: cl.exe build active file"
         }
