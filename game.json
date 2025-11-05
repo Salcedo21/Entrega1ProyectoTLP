@@ -1,0 +1,70 @@
+{
+  "config": {
+    "grid_size": [
+      20,
+      20
+    ]
+  },
+  "events": {
+    "ON_COLLISION_SELF": [
+      {
+        "accion": "GAME_OVER",
+        "objeto": null,
+        "params": []
+      }
+    ],
+    "ON_COLLISION_WALL": [
+      {
+        "accion": "GAME_OVER",
+        "objeto": null,
+        "params": []
+      }
+    ],
+    "ON_EAT_FOOD": [
+      {
+        "accion": "INCREASE_SCORE",
+        "objeto": 10,
+        "params": []
+      },
+      {
+        "accion": "SPAWN",
+        "objeto": "FOOD",
+        "params": [
+          "RANDOM"
+        ]
+      },
+      {
+        "accion": "GROW",
+        "objeto": null,
+        "params": []
+      }
+    ],
+    "ON_START": [
+      {
+        "accion": "SPAWN",
+        "objeto": "PLAYER",
+        "params": [
+          [
+            10,
+            10
+          ]
+        ]
+      },
+      {
+        "accion": "SPAWN",
+        "objeto": "FOOD",
+        "params": [
+          "RANDOM"
+        ]
+      }
+    ],
+    "ON_TICK": [
+      {
+        "accion": "MOVE",
+        "objeto": "PLAYER",
+        "params": []
+      }
+    ]
+  },
+  "tipo_juego": "SNAKE"
+}

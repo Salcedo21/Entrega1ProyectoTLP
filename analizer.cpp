@@ -84,38 +84,41 @@ static string stripCommentsSafe(const string& input){
     bool insideString = false;
 
     for (size_t i = 0; i < input.size(); ++i) {
-        char c = input[i];
+        char c    = input[i];
         char next = (i + 1 < input.size()) ? input[i + 1] : '\0';
+        char prev = (i > 0) ? input[i - 1] : '\0';
 
         if (insideString) {
             output.push_back(c);
-            if (c == '"' && input[i - 1] != '\\')
-                insideString = false;
+            if (c == '"' && prev != '\\') insideString = false;
             continue;
         }
 
-        if (c == '"' && input[i - 1] != '\\') {
+        if (c == '"' && prev != '\\') {
             insideString = true;
             output.push_back(c);
             continue;
         }
+
         if (c == '/' && next == '/') {
-            // Saltar hasta el salto de línea
             while (i < input.size() && input[i] != '\n') ++i;
-            output.push_back('\n'); // conservar salto de línea
+            output.push_back('\n');      
             continue;
         }
+
         if (c == '/' && next == '*') {
             i += 2;
-            while (i + 1 < input.size() && !(input[i] == '*' && input[i + 1] == '/')) ++i;
-            i++; // saltar '/'
+            while (i+1 < input.size() && !(input[i] == '*' && input[i + 1] == '/')) ++i;
+            if (i+1 < input.size()) ++i;   
             continue;
         }
+
         output.push_back(c);
     }
 
     return output;
 }
+
 
 
 /* =============================
@@ -287,6 +290,9 @@ public:
             int tokenLine = lineNumber_;
             int tokenCol = columnNumber_;
             switch(currentChar){
+                case '>': tokenList.push_back(Token{TokType::GT, ">", tokenLine, tokenCol}); advance_(1); break;
+case '<': tokenList.push_back(Token{TokType::LT, "<", tokenLine, tokenCol}); advance_(1); break;
+
                 case '{': tokenList.push_back(Token{TokType::LBRACE,"{",tokenLine,tokenCol}); advance_(1); break;
                 case '}': tokenList.push_back(Token{TokType::RBRACE,"}",tokenLine,tokenCol}); advance_(1); break;
                 case '[': tokenList.push_back(Token{TokType::LBRACK,"[",tokenLine,tokenCol}); advance_(1); break;

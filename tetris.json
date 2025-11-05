@@ -1,0 +1,162 @@
+{
+  "config": {
+    "grid_size": [
+      10,
+      20
+    ]
+  },
+  "events": {
+    "ON_KEY_DOWN": [
+      {
+        "accion": "MOVE",
+        "objeto": null,
+        "params": [
+          "DOWN"
+        ]
+      }
+    ],
+    "ON_KEY_LEFT": [
+      {
+        "accion": "MOVE",
+        "objeto": null,
+        "params": [
+          "LEFT"
+        ]
+      }
+    ],
+    "ON_KEY_RIGHT": [
+      {
+        "accion": "MOVE",
+        "objeto": null,
+        "params": [
+          "RIGHT"
+        ]
+      }
+    ],
+    "ON_KEY_UP": [
+      {
+        "accion": "ROTATE",
+        "objeto": null,
+        "params": []
+      }
+    ],
+    "ON_LINE_CLEAR": [
+      {
+        "accion": "INCREASE_SCORE",
+        "objeto": 100,
+        "params": []
+      }
+    ],
+    "ON_START": [
+      {
+        "accion": "SPAWN",
+        "objeto": null,
+        "params": []
+      }
+    ],
+    "ON_TICK": [
+      {
+        "accion": "MOVE",
+        "objeto": null,
+        "params": [
+          "DOWN"
+        ]
+      }
+    ]
+  },
+  "shapes": {
+    "I": [
+      [
+        [
+          1,
+          1,
+          1,
+          1
+        ]
+      ]
+    ],
+    "J": [
+      [
+        [
+          1,
+          1,
+          1
+        ],
+        [
+          1,
+          0,
+          0
+        ]
+      ]
+    ],
+    "L": [
+      [
+        [
+          1,
+          1,
+          1
+        ],
+        [
+          0,
+          0,
+          1
+        ]
+      ]
+    ],
+    "O": [
+      [
+        [
+          1,
+          1
+        ],
+        [
+          1,
+          1
+        ]
+      ]
+    ],
+    "S": [
+      [
+        [
+          0,
+          1,
+          1
+        ],
+        [
+          1,
+          1,
+          0
+        ]
+      ]
+    ],
+    "T": [
+      [
+        [
+          1,
+          1,
+          1
+        ],
+        [
+          0,
+          1,
+          0
+        ]
+      ]
+    ],
+    "Z": [
+      [
+        [
+          1,
+          1,
+          0
+        ],
+        [
+          0,
+          1,
+          1
+        ]
+      ]
+    ]
+  },
+  "tipo_juego": "TETRIS"
+}
