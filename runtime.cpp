@@ -262,7 +262,7 @@ struct Juego {
                         int cp = (c>=100)? (c-100) : c;
                         if (cp < 1 || cp > 7) cp = 4;
                         attron(COLOR_PAIR(cp) | A_BOLD);
-                        mvprintw(row, 2 + x*2, "[]");
+                        mvprintw(row, 2 + x*2, "██");
                         attroff(COLOR_PAIR(cp) | A_BOLD);
                     }
                 }
@@ -282,12 +282,12 @@ struct Juego {
                     } else if (c==2 || c==3) { // snake body/head in green
                         int cp = 5; // green
                         attron(COLOR_PAIR(cp) | A_BOLD);
-                        mvprintw(row, 2 + x*2, "OO");
+                        mvprintw(row, 2 + x*2, "██");
                         attroff(COLOR_PAIR(cp) | A_BOLD);
                     } else if (c==4) { // food in red
                         int cp = 7; // red
                         attron(COLOR_PAIR(cp) | A_BOLD);
-                        mvprintw(row, 2 + x*2, "@@");
+                        mvprintw(row, 2 + x*2, "██");
                         attroff(COLOR_PAIR(cp) | A_BOLD);
                     } else if (c==5) { // walls
                         mvprintw(row, 2 + x*2, "##");
@@ -360,10 +360,10 @@ struct Juego {
         // color por pieza
         auto shape_color = [&](const string& s)->int{
             if (s=="I") return 1; // cyan
-            if (s=="J") return 2; // blue
+            if (s=="J") return 6; // pink (magenta)
             if (s=="O") return 3; // yellow
             if (s=="S") return 5; // green
-            if (s=="T") return 6; // magenta
+            if (s=="T") return 2; // move T to blue to free pink for J
             if (s=="Z") return 7; // red
             if (s=="L") return 3; // use yellow as fallback
             return 4; // white
