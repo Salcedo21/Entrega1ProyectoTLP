@@ -44,6 +44,8 @@ struct Juego {
     vector<vector<vector<int>>> pieza;  // rotaciones de la pieza activa
     int px=0, py=0, prot=0;             // pos pieza activa y rot
     bool have_piece=false;
+    string cur_shape;
+    int cur_color = 1; // color pair id for current tetris piece
 
     // ---- Snake ----
     vector<pair<int,int>> snake;        // cabeza = front()
@@ -101,6 +103,16 @@ struct Juego {
     void run() {
         // Init curses
         initscr(); cbreak(); noecho(); keypad(stdscr, TRUE); nodelay(stdscr, TRUE); curs_set(0);
+        if (has_colors()) {
+            start_color();
+            init_pair(1, COLOR_CYAN,   COLOR_BLACK);  // I
+            init_pair(2, COLOR_BLUE,   COLOR_BLACK);  // J
+            init_pair(3, COLOR_YELLOW, COLOR_BLACK);  // O (and L if wanted)
+            init_pair(4, COLOR_WHITE,  COLOR_BLACK);  // fallback
+            init_pair(5, COLOR_GREEN,  COLOR_BLACK);  // S
+            init_pair(6, COLOR_MAGENTA,COLOR_BLACK);  // T
+            init_pair(7, COLOR_RED,    COLOR_BLACK);  // Z
+        }
 
         auto t_prev = chrono::high_resolution_clock::now();
         ejecutar("ON_START");
@@ -172,7 +184,7 @@ struct Juego {
                     for (int x=0;x<(int)M[y].size();++x)
                         if (M[y][x]==1) {
                             int gx = px + x, gy = py + y;
-                            if (gy>=0 && gy<H && gx>=0 && gx<W) grid[gy][gx] = 1;
+                            if (gy>=0 && gy<H && gx>=0 && gx<W) grid[gy][gx] = cur_color;
                         }
                 have_piece = false;
                 t_clear_lines();
@@ -198,14 +210,14 @@ struct Juego {
         // copiar grid
         auto disp = grid;
 
-        // pintar pieza tetris (2)
+        // pintar pieza tetris (usa codigos 100+color para pieza activa)
         if (tipo=="TETRIS" && have_piece) {
             const auto& M = pieza[prot];
             for (int y=0; y<(int)M.size(); ++y) {
                 for (int x=0; x<(int)M[y].size(); ++x) {
                     if (M[y][x]==1) {
                         int gx = px + x, gy = py + y;
-                        if (gy>=0 && gy<H && gx>=0 && gx<W) disp[gy][gx] = 2;
+                        if (gy>=0 && gy<H && gx>=0 && gx<W) disp[gy][gx] = 100 + cur_color;
                     }
                 }
             }
@@ -239,23 +251,56 @@ struct Juego {
         mvprintw(0, 0, "%s", top.c_str());
         int row=1;
 
-        for (int y=0;y<H;++y,++row) {
-            string line = "# ";
-            for (int x=0;x<W;++x) {
-                int c = disp[y][x];
-                if (c==0)      line += "  ";
-                else if (c==1) line += "[]";
-                else if (c==2) line += "[]";
-                else if (c==3) line += "OO";
-                else if (c==4) line += "@@";
-                else if (c==5) line += "##";
+        if (tipo=="TETRIS") {
+            for (int y=0;y<H;++y,++row) {
+                mvprintw(row, 0, "# ");
+                for (int x=0;x<W;++x) {
+                    int c = disp[y][x];
+                    if (c==0) {
+                        mvprintw(row, 2 + x*2, "  ");
+                    } else {
+                        int cp = (c>=100)? (c-100) : c;
+                        if (cp < 1 || cp > 7) cp = 4;
+                        attron(COLOR_PAIR(cp) | A_BOLD);
+                        mvprintw(row, 2 + x*2, "[]");
+                        attroff(COLOR_PAIR(cp) | A_BOLD);
+                    }
+                }
+                mvprintw(row, 2 + W*2, " #");
+                if (y==2) mvprintw(row, 2 + W*2 + 4, "PUNTUACION: %d", score);
+                if (y==4) mvprintw(row, 2 + W*2 + 4, "CONTROLES:");
+                if (y==5) mvprintw(row, 2 + W*2 + 4, "Flechas");
+                if (y==6) mvprintw(row, 2 + W*2 + 4, "'q': Salir");
             }
-            line += " #";
-            if (y==2) line += "    PUNTUACION: " + to_string(score);
-            if (y==4) line += "    CONTROLES:";
-            if (y==5) line += "     Flechas";
-            if (y==6) line += "     'q': Salir";
-            mvprintw(row, 0, "%s", line.c_str());
+        } else { // SNAKE render with colors
+            for (int y=0;y<H;++y,++row) {
+                mvprintw(row, 0, "# ");
+                for (int x=0;x<W;++x) {
+                    int c = disp[y][x];
+                    if (c==0) {
+                        mvprintw(row, 2 + x*2, "  ");
+                    } else if (c==2 || c==3) { // snake body/head in green
+                        int cp = 5; // green
+                        attron(COLOR_PAIR(cp) | A_BOLD);
+                        mvprintw(row, 2 + x*2, "OO");
+                        attroff(COLOR_PAIR(cp) | A_BOLD);
+                    } else if (c==4) { // food in red
+                        int cp = 7; // red
+                        attron(COLOR_PAIR(cp) | A_BOLD);
+                        mvprintw(row, 2 + x*2, "@@");
+                        attroff(COLOR_PAIR(cp) | A_BOLD);
+                    } else if (c==5) { // walls
+                        mvprintw(row, 2 + x*2, "##");
+                    } else {
+                        mvprintw(row, 2 + x*2, "  ");
+                    }
+                }
+                mvprintw(row, 2 + W*2, " #");
+                if (y==2) mvprintw(row, 2 + W*2 + 4, "PUNTUACION: %d", score);
+                if (y==4) mvprintw(row, 2 + W*2 + 4, "CONTROLES:");
+                if (y==5) mvprintw(row, 2 + W*2 + 4, "Flechas");
+                if (y==6) mvprintw(row, 2 + W*2 + 4, "'q': Salir");
+            }
         }
         mvprintw(row, 0, "%s", top.c_str());
 
@@ -309,7 +354,21 @@ struct Juego {
         vector<string> ids; ids.reserve(shapes.size());
         for (auto& kv : shapes) ids.push_back(kv.first);
         uniform_int_distribution<int> dist(0, (int)ids.size()-1);
-        pieza = shapes[ids[dist(rng)]];
+        int pick = dist(rng);
+        cur_shape = ids[pick];
+        pieza = shapes[cur_shape];
+        // color por pieza
+        auto shape_color = [&](const string& s)->int{
+            if (s=="I") return 1; // cyan
+            if (s=="J") return 2; // blue
+            if (s=="O") return 3; // yellow
+            if (s=="S") return 5; // green
+            if (s=="T") return 6; // magenta
+            if (s=="Z") return 7; // red
+            if (s=="L") return 3; // use yellow as fallback
+            return 4; // white
+        };
+        cur_color = shape_color(cur_shape);
         // If shape has only one rotation, synthesize the remaining rotations (up to 4)
         if (!pieza.empty() && pieza.size()==1) {
             auto rot90 = [](const vector<vector<int>>& M){
