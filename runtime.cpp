@@ -134,9 +134,30 @@ struct Juego {
         mvprintw(3, 10, "  JUEGO TERMINADO");
         mvprintw(4, 10, "=================");
         mvprintw(6, 10, "Puntuacion: %d", score);
-@@ -146,120 +158,132 @@ struct Juego {
+    }
+
+    // ---------- Input ----------
+    void handle_input() {
+        int ch = getch();
+        if (ch == ERR) return;
+        if (ch == 'q' || ch == 'Q') { game_over = true; return; }
+
+        if (tipo=="SNAKE") {
+            if (ch == KEY_UP)       snake_dir(0,-1);
+            else if (ch == KEY_DOWN)  snake_dir(0, 1);
+            else if (ch == KEY_LEFT)  snake_dir(-1,0);
+            else if (ch == KEY_RIGHT) snake_dir(1, 0);
+        } else if (tipo=="TETRIS") {
+            if (ch == KEY_LEFT)      t_move("LEFT");
+            else if (ch == KEY_RIGHT) t_move("RIGHT");
+            else if (ch == KEY_DOWN)  t_move("DOWN");
+            else if (ch == KEY_UP)    t_rotate();
         }
     }
+
+    // Minimal stubs so Tetris references compile
+    void t_move(const string& /*dir*/) {}
+    void t_rotate() {}
 
     // ---------- Render ----------
     void render() {
@@ -215,7 +236,9 @@ struct Juego {
         if (it == events.end()) return;
         for (const auto& act : it->second) {
             const string verbo  = act.value("accion", "");
-            const string objeto = act.value("objeto", "");
+            const string objeto = (act.contains("objeto") && act["objeto"].is_string())
+                                  ? act["objeto"].get<string>()
+                                  : string("");
 
             if (verbo=="INCREASE_SCORE") {
                 // objeto puede ser número o string
@@ -268,7 +291,12 @@ struct Juego {
                 if (M[yy][xx]==1) {
                     int gx = x+xx, gy=y+yy;
                     if (gx<0 || gx>=W || gy<0 || gy>=H) return true;
-@@ -307,96 +331,148 @@ struct Juego {
+                    if (grid[gy][gx] != 0) return true;
+                }
+            }
+        }
+        return false;
+    }
 
     void t_clear_lines() {
         vector<vector<int>> keep;
@@ -313,7 +341,6 @@ struct Juego {
 
     void s_spawn_food() {
         if (W<=0 || H<=0) return;
-        uniform_int_distribution<int> dx(0, W-1), dy(0, H-1);
         auto [min_x, max_x] = s_inner_bounds_x();
         auto [min_y, max_y] = s_inner_bounds_y();
         if (min_x > max_x || min_y > max_y) { food.reset(); return; }
@@ -335,15 +362,16 @@ struct Juego {
         auto [min_x, max_x] = s_inner_bounds_x();
         auto [min_y, max_y] = s_inner_bounds_y();
         if (min_x > max_x || min_y > max_y) {
-            ejecutar("ON_COLLISION_WALL"); return;
+            ejecutar("ON_COLLISION_WALL");
+            return;
         }
-        // paredes
-        if (nh.first<0 || nh.first>=W || nh.second<0 || nh.second>=H) {
+        // paredes dentro del área jugable
         if (nh.first < min_x || nh.first > max_x || nh.second < min_y || nh.second > max_y) {
-            ejecutar("ON_COLLISION_WALL"); return;
+            ejecutar("ON_COLLISION_WALL");
+            return;
         }
         // cuerpo (excepto la última celda si va a mover)
-        for (size_t i=0;i+1<snake.size();++i) {
+        
         bool will_keep_tail = (food && nh==*food) || snake_grow_pending > 0;
         size_t check_len = snake.size();
         if (!will_keep_tail && check_len>0) --check_len;
@@ -353,19 +381,20 @@ struct Juego {
 
         snake.insert(snake.begin(), nh);
 
-        if (food && nh==*food) {
         bool ate = food && nh==*food;
         if (ate) {
             food.reset();
             ejecutar("ON_EAT_FOOD"); // puede aumentar score y re-spawnear comida
-        } else {
-            if (!snake.empty()) snake.pop_back();
+            // crecer al comer
+            snake_grow_pending += 1;
         }
 
-        if (snake_grow_pending > 0) {
-            --snake_grow_pending;
-        } else if (snake.size()>1) {
-            snake.pop_back();
+        if (!ate) {
+            if (snake_grow_pending > 0) {
+                --snake_grow_pending;
+            } else {
+                if (!snake.empty()) snake.pop_back();
+            }
         }
     }
 
@@ -428,3 +457,4 @@ int main(int argc, char** argv){
         std::cout << "Error: " << e.what() << "\n";
         return 1;
     }
+}
