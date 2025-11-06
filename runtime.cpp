@@ -5,6 +5,7 @@
 
 #include <pdcurses.h>
 #include "json.hpp"
+#include <algorithm>
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -48,6 +49,7 @@ struct Juego {
     vector<pair<int,int>> snake;        // cabeza = front()
     pair<int,int> sdir{1,0};
     optional<pair<int,int>> food;
+    int snake_grow_pending = 0;
 
     // ---------- Carga ----------
     void cargar(const json& j) {
@@ -61,6 +63,11 @@ struct Juego {
             }
         }
         grid.assign(H, vector<int>(W, 0));
+        snake.clear();
+        food.reset();
+        snake_grow_pending = 0;
+        have_piece = false;
+        pieza.clear();
 
         if (j.contains("events") && j["events"].is_object()) {
             for (auto& [k, arr] : j["events"].items()) {
@@ -97,6 +104,11 @@ struct Juego {
 
         auto t_prev = chrono::high_resolution_clock::now();
         ejecutar("ON_START");
+        if (tipo=="TETRIS" && !have_piece) t_spawn();
+        if (tipo=="SNAKE") {
+            if (snake.empty()) s_spawn_player(json::object());
+            if (!food) s_spawn_food();
+        }
 
         while (!game_over) {
             // dt
@@ -122,27 +134,7 @@ struct Juego {
         mvprintw(3, 10, "  JUEGO TERMINADO");
         mvprintw(4, 10, "=================");
         mvprintw(6, 10, "Puntuacion: %d", score);
-        mvprintw(8, 10, "Pulsa una tecla...");
-        nodelay(stdscr, FALSE); getch();
-        endwin();
-    }
-
-    // ---------- Entrada ----------
-    void handle_input() {
-        int k = getch();
-        if (k == ERR) return;
-        if (k=='q' || k=='Q') { game_over = true; return; }
-
-        if (tipo=="TETRIS") {
-            if (k==KEY_LEFT)  ejecutar("ON_KEY_LEFT");
-            if (k==KEY_RIGHT) ejecutar("ON_KEY_RIGHT");
-            if (k==KEY_DOWN)  ejecutar("ON_KEY_DOWN");
-            if (k==KEY_UP)    ejecutar("ON_KEY_UP");
-        } else {
-            if (k==KEY_LEFT)  snake_dir(-1,0);
-            if (k==KEY_RIGHT) snake_dir(1,0);
-            if (k==KEY_UP)    snake_dir(0,-1);
-            if (k==KEY_DOWN)  snake_dir(0,1);
+@@ -146,120 +158,132 @@ struct Juego {
         }
     }
 
@@ -168,6 +160,17 @@ struct Juego {
 
         // snake: cabeza 3, cuerpo 2, comida 4
         if (tipo=="SNAKE") {
+            const int WALL = 5;
+            if (W>0 && H>0) {
+                for (int x=0; x<W; ++x) {
+                    disp[0][x] = WALL;
+                    disp[H-1][x] = WALL;
+                }
+                for (int y=0; y<H; ++y) {
+                    disp[y][0] = WALL;
+                    disp[y][W-1] = WALL;
+                }
+            }
             for (size_t i=0;i<snake.size();++i) {
                 auto [x,y] = snake[i];
                 if (y>=0 && y<H && x>=0 && x<W) disp[y][x] = (i==0?3:2);
@@ -192,6 +195,7 @@ struct Juego {
                 else if (c==2) line += "[]";
                 else if (c==3) line += "OO";
                 else if (c==4) line += "@@";
+                else if (c==5) line += "##";
             }
             line += " #";
             if (y==2) line += "    PUNTUACION: " + to_string(score);
@@ -238,6 +242,7 @@ struct Juego {
                 else if (verbo=="SPAWN" && objeto=="FOOD") s_spawn_food();
                 else if (verbo=="MOVE"  && objeto=="PLAYER") s_move();
                 else if (verbo=="GROW") {/* implícito al comer */}
+                else if (verbo=="GROW") s_grow(act);
             }
         }
     }
@@ -263,47 +268,7 @@ struct Juego {
                 if (M[yy][xx]==1) {
                     int gx = x+xx, gy=y+yy;
                     if (gx<0 || gx>=W || gy<0 || gy>=H) return true;
-                    if (grid[gy][gx]!=0) return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    void t_move(const string& dir) {
-        if (!have_piece) return;
-        int dx=0, dy=0;
-        if (dir=="LEFT") dx=-1;
-        else if (dir=="RIGHT") dx=1;
-        else if (dir=="DOWN") dy=1;
-
-        if (!t_collide(px+dx, py+dy, prot)) {
-            px += dx; py += dy;
-        } else if (dy>0) {
-            t_lock();
-        }
-    }
-
-    void t_rotate() {
-        if (!have_piece) return;
-        int nr = (prot + 1) % (int)pieza.size();
-        if (!t_collide(px, py, nr)) prot = nr;
-    }
-
-    void t_lock() {
-        const auto& M = pieza[prot];
-        for (int yy=0; yy<(int)M.size(); ++yy) {
-            for (int xx=0; xx<(int)M[yy].size(); ++xx) {
-                if (M[yy][xx]==1) {
-                    int gx=px+xx, gy=py+yy;
-                    if (gy>=0 && gy<H && gx>=0 && gx<W) grid[gy][gx]=1;
-                }
-            }
-        }
-        have_piece=false;
-        t_clear_lines();
-        ejecutar("ON_START"); // spawnea siguiente
-    }
+@@ -307,96 +331,148 @@ struct Juego {
 
     void t_clear_lines() {
         vector<vector<int>> keep;
@@ -331,12 +296,28 @@ struct Juego {
         }
         snake.clear();
         snake.emplace_back(sx, sy);
+        auto [min_x, max_x] = s_inner_bounds_x();
+        auto [min_y, max_y] = s_inner_bounds_y();
+        if (min_x > max_x || min_y > max_y) {
+            snake.clear();
+            snake.emplace_back(0, 0);
+        } else {
+            sx = std::clamp(sx, min_x, max_x);
+            sy = std::clamp(sy, min_y, max_y);
+            snake.clear();
+            snake.emplace_back(sx, sy);
+        }
         sdir = {1, 0};
+        snake_grow_pending = 0;
     }
 
     void s_spawn_food() {
         if (W<=0 || H<=0) return;
         uniform_int_distribution<int> dx(0, W-1), dy(0, H-1);
+        auto [min_x, max_x] = s_inner_bounds_x();
+        auto [min_y, max_y] = s_inner_bounds_y();
+        if (min_x > max_x || min_y > max_y) { food.reset(); return; }
+        uniform_int_distribution<int> dx(min_x, max_x), dy(min_y, max_y);
         for (int t=0;t<5000;++t) {
             int x = dx(rng), y = dy(rng);
             bool ocup = false;
@@ -351,21 +332,40 @@ struct Juego {
         auto [hx,hy] = snake.front();
         pair<int,int> nh{hx + sdir.first, hy + sdir.second};
 
+        auto [min_x, max_x] = s_inner_bounds_x();
+        auto [min_y, max_y] = s_inner_bounds_y();
+        if (min_x > max_x || min_y > max_y) {
+            ejecutar("ON_COLLISION_WALL"); return;
+        }
         // paredes
         if (nh.first<0 || nh.first>=W || nh.second<0 || nh.second>=H) {
+        if (nh.first < min_x || nh.first > max_x || nh.second < min_y || nh.second > max_y) {
             ejecutar("ON_COLLISION_WALL"); return;
         }
         // cuerpo (excepto la última celda si va a mover)
         for (size_t i=0;i+1<snake.size();++i) {
+        bool will_keep_tail = (food && nh==*food) || snake_grow_pending > 0;
+        size_t check_len = snake.size();
+        if (!will_keep_tail && check_len>0) --check_len;
+        for (size_t i=0;i<check_len;++i) {
             if (snake[i]==nh) { ejecutar("ON_COLLISION_SELF"); return; }
         }
 
         snake.insert(snake.begin(), nh);
 
         if (food && nh==*food) {
+        bool ate = food && nh==*food;
+        if (ate) {
+            food.reset();
             ejecutar("ON_EAT_FOOD"); // puede aumentar score y re-spawnear comida
         } else {
             if (!snake.empty()) snake.pop_back();
+        }
+
+        if (snake_grow_pending > 0) {
+            --snake_grow_pending;
+        } else if (snake.size()>1) {
+            snake.pop_back();
         }
     }
 
@@ -374,6 +374,34 @@ struct Juego {
         if (x!=0 && sdir.first == -x) return;
         if (y!=0 && sdir.second== -y) return;
         sdir = {x,y};
+    }
+
+    void s_grow(const json& act) {
+        int amount = 1;
+        if (act.contains("params") && act["params"].is_array() && !act["params"].empty()) {
+            const auto& p = act["params"][0];
+            if (p.is_number_integer()) amount = p.get<int>();
+            else if (p.is_string()) {
+                try {
+                    amount = stoi(p.get<string>());
+                } catch (...) {}
+            }
+        } else if (act.contains("objeto") && act["objeto"].is_number_integer()) {
+            amount = act["objeto"].get<int>();
+        }
+        if (amount > 0) snake_grow_pending += amount;
+    }
+
+    pair<int,int> s_inner_bounds_x() const {
+        if (W <= 0) return {0, -1};
+        if (W <= 2) return {0, W-1};
+        return {1, W-2};
+    }
+
+    pair<int,int> s_inner_bounds_y() const {
+        if (H <= 0) return {0, -1};
+        if (H <= 2) return {0, H-1};
+        return {1, H-2};
     }
 };
 
@@ -400,4 +428,3 @@ int main(int argc, char** argv){
         std::cout << "Error: " << e.what() << "\n";
         return 1;
     }
-}
