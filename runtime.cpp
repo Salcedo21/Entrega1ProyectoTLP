@@ -3,7 +3,8 @@
 // Contrato de JSON compatible con tu runtime.py
 // Compilar: g++ -std=c++17 runtime.cpp -lpdcurses -o runtime.exe
 
-#include "librerias/pdcurses/curses.h"
+#include <pdcurses.h>
+#include "json.hpp"
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -12,7 +13,7 @@
 #include <optional>
 #include <random>
 #include <chrono>
-#include "json.hpp"
+
 
 using json = nlohmann::json;
 using namespace std;
