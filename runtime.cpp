@@ -155,9 +155,41 @@ struct Juego {
         }
     }
 
-    // Minimal stubs so Tetris references compile
-    void t_move(const string& /*dir*/) {}
-    void t_rotate() {}
+    // --- Tetris movement/rotation ---
+    void t_move(const string& dir) {
+        if (!have_piece) { t_spawn(); return; }
+        if (dir == "LEFT") {
+            if (!t_collide(px-1, py, prot)) px -= 1;
+        } else if (dir == "RIGHT") {
+            if (!t_collide(px+1, py, prot)) px += 1;
+        } else if (dir == "DOWN") {
+            if (!t_collide(px, py+1, prot)) {
+                py += 1;
+            } else {
+                // lock piece into grid
+                const auto& M = pieza[prot];
+                for (int y=0;y<(int)M.size();++y)
+                    for (int x=0;x<(int)M[y].size();++x)
+                        if (M[y][x]==1) {
+                            int gx = px + x, gy = py + y;
+                            if (gy>=0 && gy<H && gx>=0 && gx<W) grid[gy][gx] = 1;
+                        }
+                have_piece = false;
+                t_clear_lines();
+                t_spawn();
+            }
+        }
+    }
+
+    void t_rotate() {
+        if (!have_piece) return;
+        int next = (prot + 1) % (int)pieza.size();
+        if (!t_collide(px, py, next)) { prot = next; return; }
+        // simple wall kicks
+        if (!t_collide(px-1, py, next)) { px -= 1; prot = next; return; }
+        if (!t_collide(px+1, py, next)) { px += 1; prot = next; return; }
+        // otherwise keep current orientation
+    }
 
     // ---------- Render ----------
     void render() {
@@ -278,6 +310,24 @@ struct Juego {
         for (auto& kv : shapes) ids.push_back(kv.first);
         uniform_int_distribution<int> dist(0, (int)ids.size()-1);
         pieza = shapes[ids[dist(rng)]];
+        // If shape has only one rotation, synthesize the remaining rotations (up to 4)
+        if (!pieza.empty() && pieza.size()==1) {
+            auto rot90 = [](const vector<vector<int>>& M){
+                int h = (int)M.size();
+                int w = h? (int)M[0].size() : 0;
+                vector<vector<int>> R(w, vector<int>(h, 0));
+                for (int y=0;y<h;++y)
+                    for (int x=0;x<w;++x)
+                        R[x][h-1-y] = M[y][x];
+                return R;
+            };
+            vector<vector<int>> r1 = rot90(pieza[0]);
+            vector<vector<int>> r2 = rot90(r1);
+            vector<vector<int>> r3 = rot90(r2);
+            pieza.push_back(r1);
+            pieza.push_back(r2);
+            pieza.push_back(r3);
+        }
         prot = 0; have_piece = true;
         px = max(0, W/2 - 2); py = 0;
         if (t_collide(px, py, prot)) game_over = true;
